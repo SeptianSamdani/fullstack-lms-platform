@@ -8,10 +8,12 @@ use App\Models\Lesson;
 use App\Models\Module;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class LessonController extends Controller
 {
     use AuthorizesRequests;
+
     /**
      * Display a listing of the resource.
      */
@@ -30,11 +32,23 @@ class LessonController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content_type' => 'required|in:video,text,mixed',
-            'content_url' => 'required_if:content_type,video,mixed|nullable|url',
+            'content_url' => 'nullable|url',
             'content' => 'required_if:content_type,text,mixed|nullable|string',
+            'video' => 'nullable|file|mimes:mp4,mov,avi,webm|max:102400',
             'duration' => 'nullable|integer|min:0',
             'order' => 'nullable|integer|min:0',
         ]);
+
+        $this->validateVideoSource($request, $validated['content_type']);
+
+        if ($request->hasFile('video')) {
+            $uploaded = cloudinary()->upload($request->file('video')->getRealPath(), [
+                'folder' => 'lms/lessons',
+                'resource_type' => 'video',
+            ]);
+            $validated['content_url'] = $uploaded->getSecurePath();
+        }
+        unset($validated['video']);
 
         return response()->json($module->lessons()->create($validated), 201);
     }
@@ -69,11 +83,26 @@ class LessonController extends Controller
         $validated = $request->validate([
             'title' => 'sometimes|string|max:255',
             'content_type' => 'sometimes|in:video,text,mixed',
-            'content_url' => 'required_if:content_type,video,mixed|nullable|url',
+            'content_url' => 'nullable|url',
             'content' => 'required_if:content_type,text,mixed|nullable|string',
+            'video' => 'nullable|file|mimes:mp4,mov,avi,webm|max:102400',
             'duration' => 'nullable|integer|min:0',
             'order' => 'nullable|integer|min:0',
         ]);
+
+        $contentType = $validated['content_type'] ?? $lesson->content_type;
+        if (!$request->hasFile('video')) {
+            $this->validateVideoSource($request, $contentType, $lesson->content_url);
+        }
+
+        if ($request->hasFile('video')) {
+            $uploaded = cloudinary()->upload($request->file('video')->getRealPath(), [
+                'folder' => 'lms/lessons',
+                'resource_type' => 'video',
+            ]);
+            $validated['content_url'] = $uploaded->getSecurePath();
+        }
+        unset($validated['video']);
 
         $lesson->update($validated);
         return response()->json($lesson);
@@ -87,5 +116,24 @@ class LessonController extends Controller
         $this->authorize('delete', $lesson);
         $lesson->delete();
         return response()->json(null, 204);
+    }
+
+    /**
+     * Pastikan lesson video/mixed punya sumber video:
+     * baik dari file upload, content_url (link), atau nilai lama saat update.
+     */
+    private function validateVideoSource(Request $request, string $contentType, ?string $existingUrl = null): void
+    {
+        if (!in_array($contentType, ['video', 'mixed'])) {
+            return;
+        }
+
+        $hasSource = $request->hasFile('video') || $request->filled('content_url') || $existingUrl;
+
+        if (!$hasSource) {
+            throw ValidationException::withMessages([
+                'video' => 'Wajib mengisi content_url (link video) atau upload file video.',
+            ]);
+        }
     }
 }

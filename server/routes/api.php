@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ProgressController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
@@ -23,6 +24,12 @@ Route::get('/subscription-plans', [SubscriptionController::class, 'plans']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+
+    // ─── Profile ───────────────────────────────────────────────────────────
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar']);
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 
     // ─── Dashboard (role-based) ───────────────────────────────────────────────
     Route::get('/dashboard/admin',      [DashboardController::class, 'admin'])->middleware('role:admin');

@@ -23,7 +23,19 @@ class CategoryController extends Controller
     {
         $this->authorize('create', Category::class);
 
-        $validated = $request->validate(['name' => 'required|string|max:255|unique:categories']);
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:categories',
+            'icon' => 'nullable|image|max:1024',
+        ]);
+
+        if ($request->hasFile('icon')) {
+            $uploaded = cloudinary()->upload($request->file('icon')->getRealPath(), [
+                'folder' => 'lms/categories',
+            ]);
+            $validated['icon_url'] = $uploaded->getSecurePath();
+        }
+        unset($validated['icon']);
+
         return response()->json(Category::create($validated), 201);
     }
 
@@ -36,7 +48,19 @@ class CategoryController extends Controller
     {
         $this->authorize('update', Category::class);
 
-        $validated = $request->validate(['name' => 'required|string|max:255|unique:categories,name,' . $category->id]);
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
+            'icon' => 'nullable|image|max:1024',
+        ]);
+
+        if ($request->hasFile('icon')) {
+            $uploaded = cloudinary()->upload($request->file('icon')->getRealPath(), [
+                'folder' => 'lms/categories',
+            ]);
+            $validated['icon_url'] = $uploaded->getSecurePath();
+        }
+        unset($validated['icon']);
+
         $category->update($validated);
         return response()->json($category);
     }
