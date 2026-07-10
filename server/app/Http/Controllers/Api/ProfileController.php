@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
@@ -45,18 +46,17 @@ class ProfileController extends Controller
             'avatar' => 'required|image|max:2048',
         ]);
 
-        $uploaded = cloudinary()->upload($request->file('avatar')->getRealPath(), [
-            'folder' => 'lms/avatars',
-        ]);
+        $path = $request->file('avatar')->store('lms/avatars', 'cloudinary');
+        $url = Storage::disk('cloudinary')->url($path);
 
         $user = $request->user();
-        $user->update(['avatar_url' => $uploaded->getSecurePath()]);
+        $user->update(['avatar_url' => $url]);
 
         return response()->json($this->withRoles($user));
     }
 
     /**
-     * Ganti password (dipisah dari update profile demi keamanan).
+     * Update password (dipisahkan dari update profile demi keamanan).
      */
     public function updatePassword(Request $request)
     {

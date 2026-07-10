@@ -8,6 +8,7 @@ use App\Models\Lesson;
 use App\Models\Module;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class LessonController extends Controller
@@ -42,11 +43,8 @@ class LessonController extends Controller
         $this->validateVideoSource($request, $validated['content_type']);
 
         if ($request->hasFile('video')) {
-            $uploaded = cloudinary()->upload($request->file('video')->getRealPath(), [
-                'folder' => 'lms/lessons',
-                'resource_type' => 'video',
-            ]);
-            $validated['content_url'] = $uploaded->getSecurePath();
+            $path = $request->file('video')->store('lms/lessons', 'cloudinary');
+            $validated['content_url'] = Storage::disk('cloudinary')->url($path);
         }
         unset($validated['video']);
 
@@ -96,11 +94,8 @@ class LessonController extends Controller
         }
 
         if ($request->hasFile('video')) {
-            $uploaded = cloudinary()->upload($request->file('video')->getRealPath(), [
-                'folder' => 'lms/lessons',
-                'resource_type' => 'video',
-            ]);
-            $validated['content_url'] = $uploaded->getSecurePath();
+            $path = $request->file('video')->store('lms/lessons', 'cloudinary');
+            $validated['content_url'] = Storage::disk('cloudinary')->url($path);
         }
         unset($validated['video']);
 

@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cloudinary;
+use Illuminate\Support\Facades\Storage;
 
 class CourseController extends Controller
 {
@@ -53,10 +53,8 @@ class CourseController extends Controller
         ]);
 
         if ($request->hasFile('thumbnail')) {
-            $uploaded = cloudinary()->upload($request->file('thumbnail')->getRealPath(), [
-                'folder' => 'lms/courses', 
-            ]); 
-            $validated['thumbnail_url'] = $uploaded->getSecurePath(); 
+            $path = $request->file('thumbnail')->store('lms/courses', 'cloudinary');
+            $validated['thumbnail_url'] = Storage::disk('cloudinary')->url($path);
         }
         unset($validated['thumbnail']);
 
@@ -90,10 +88,8 @@ class CourseController extends Controller
         ]);
 
         if ($request->hasFile('thumbnail')) {
-            $uploaded = cloudinary()->upload($request->file('thumbnail')->getRealPath(), [
-                'folder' => 'lms/courses', 
-            ]); 
-            $validated['thumbnail_url'] = $uploaded->getSecurePath(); 
+            $path = $request->file('thumbnail')->store('lms/courses', 'cloudinary');
+            $validated['thumbnail_url'] = Storage::disk('cloudinary')->url($path);
         }
         unset($validated['thumbnail']);
 

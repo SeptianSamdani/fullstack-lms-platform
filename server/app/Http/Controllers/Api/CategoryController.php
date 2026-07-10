@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
 {
@@ -29,10 +30,8 @@ class CategoryController extends Controller
         ]);
 
         if ($request->hasFile('icon')) {
-            $uploaded = cloudinary()->upload($request->file('icon')->getRealPath(), [
-                'folder' => 'lms/categories',
-            ]);
-            $validated['icon_url'] = $uploaded->getSecurePath();
+            $path = $request->file('icon')->store('lms/categories', 'cloudinary');
+            $validated['icon_url'] = Storage::disk('cloudinary')->url($path);
         }
         unset($validated['icon']);
 
@@ -54,10 +53,8 @@ class CategoryController extends Controller
         ]);
 
         if ($request->hasFile('icon')) {
-            $uploaded = cloudinary()->upload($request->file('icon')->getRealPath(), [
-                'folder' => 'lms/categories',
-            ]);
-            $validated['icon_url'] = $uploaded->getSecurePath();
+            $path = $request->file('icon')->store('lms/categories', 'cloudinary');
+            $validated['icon_url'] = Storage::disk('cloudinary')->url($path);
         }
         unset($validated['icon']);
 
