@@ -18,6 +18,8 @@ class CourseController extends Controller
     {
         $query = Course::with(['instructor:id,name', 'category:id,name'])
             ->withCount('enrollments')
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews')
             ->where('status', 'published')
             ->when($request->category_id, fn($q, $id) => $q->where('category_id', $id))
             ->when($request->search, fn($q, $s) => $q->where('title', 'like', "%{$s}%"))
@@ -67,7 +69,11 @@ class CourseController extends Controller
      */
     public function show(Course $course)
     {
-        return response()->json($course->load(['instructor', 'category', 'modules.lessons']));
+        return response()->json(
+            $course->loadAvg('reviews', 'rating')
+                ->loadCount('reviews')
+                ->load(['instructor', 'category', 'modules.lessons'])
+        );
     }
 
     /**

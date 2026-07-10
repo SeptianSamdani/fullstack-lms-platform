@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             SubscriptionSeeder::class,     // 6. Subscription + payments
             EnrollmentSeeder::class,       // 7. Enrollment students ke courses
             ProgressSeeder::class,         // 8. Progress belajar
+            ReviewSeeder::class,           // 9. Review & rating course
         ]);
     }
 }

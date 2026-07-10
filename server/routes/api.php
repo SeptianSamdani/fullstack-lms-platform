@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\ReviewController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
@@ -20,6 +21,7 @@ Route::apiResource('courses', CourseController::class)->only(['index', 'show']);
 Route::get('/courses/{course}/modules', [ModuleController::class, 'index']);
 Route::get('/modules/{module}/lessons', [LessonController::class, 'index']);
 Route::get('/subscription-plans', [SubscriptionController::class, 'plans']);
+Route::get('/courses/{course}/reviews', [ReviewController::class, 'index']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -80,4 +82,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // ─── Progress ────────────────────────────────────────────────────────────
     Route::post('/lessons/{lesson}/complete',         [ProgressController::class, 'markComplete']);
     Route::get('/courses/{course}/progress',          [ProgressController::class, 'courseProgress']);
+
+    // ─── Reviews ─────────────────────────────────────────────────────────────
+    Route::post('/courses/{course}/reviews', [ReviewController::class, 'store']);
+    Route::put('/reviews/{review}', [ReviewController::class, 'update']);
+    Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
 });
