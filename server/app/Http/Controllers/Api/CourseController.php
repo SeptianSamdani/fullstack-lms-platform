@@ -117,4 +117,27 @@ class CourseController extends Controller
                 ->paginate($request->per_page ?? 10)
         );
     }
+
+    /**
+     * Tampilkan course yang sudah di-soft-delete (arsip) milik instructor.
+     */
+    public function trashed(Request $request)
+    {
+        return response()->json(
+            Course::onlyTrashed()
+                ->where('instructor_id', $request->user()->id)
+                ->paginate($request->per_page ?? 10)
+        );
+    }
+
+    /**
+     * Pulihkan course yang sudah diarsipkan.
+     */
+    public function restore(Request $request, int $id)
+    {
+        $course = Course::onlyTrashed()->findOrFail($id);
+        $this->authorize('update', $course);
+        $course->restore();
+        return response()->json($course);
+    }
 }

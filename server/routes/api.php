@@ -52,9 +52,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('categories', CategoryController::class)->except(['index', 'show']);
     Route::apiResource('courses', CourseController::class)->except(['index', 'show']);
     Route::get('/instructor/courses', [CourseController::class, 'myCourses']);
+    Route::get('/instructor/courses/trashed', [CourseController::class, 'trashed']);
 
     // ─── Modules & Lessons (instructor/admin) ─────────────────────────────────
     Route::post('/courses/{course}/modules',  [ModuleController::class, 'store']);
+    Route::post('/courses/{id}/restore', [CourseController::class, 'restore']);
+
     Route::put('/modules/{module}',           [ModuleController::class, 'update']);
     Route::delete('/modules/{module}',        [ModuleController::class, 'destroy']);
 

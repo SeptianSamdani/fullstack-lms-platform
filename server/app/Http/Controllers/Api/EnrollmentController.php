@@ -46,10 +46,17 @@ class EnrollmentController extends Controller
             ], 403);
         }
 
-        $enrollment = Enrollment::create([
-            'user_id' => $user->id,
-            'course_id' => $course->id,
-        ]);
+        try {
+            $enrollment = Enrollment::create([
+                'user_id' => $user->id,
+                'course_id' => $course->id,
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() === '23000') {
+                return response()->json(['message' => 'Kamu sudah terdaftar di kursus ini.'], 409);
+            }
+            throw $e;
+        }
 
         return response()->json($enrollment->load('course'), 201);
     }
@@ -61,7 +68,7 @@ class EnrollmentController extends Controller
     {
         abort_if($enrollment->user_id !== $request->user()->id, 403);
     
-        // Opsional: cegah unenroll jika sudah completed
+        // Cegah unenroll jika sudah completed
         if ($enrollment->status === 'completed') {
             return response()->json(['message' => 'Tidak bisa unenroll dari kursus yang sudah selesai.'], 422);
         }
