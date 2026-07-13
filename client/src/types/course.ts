@@ -10,6 +10,33 @@ export interface Instructor {
   name: string
 }
 
+export interface Lesson {
+  id: number
+  module_id: number
+  title: string
+  content_url: string | null
+  content: string | null
+  content_type: 'video' | 'text' | 'mixed'
+  duration: number | null
+  order: number
+}
+
+export interface Module {
+  id: number
+  course_id: number
+  title: string
+  order: number
+  lessons: Lesson[]
+}
+
+export interface Review {
+  id: number
+  user: { id: number; name: string; avatar_url: string | null }
+  rating: number
+  comment: string | null
+  created_at: string
+}
+
 export interface Course {
   id: number
   title: string
@@ -23,7 +50,7 @@ export interface Course {
   enrollments_count?: number
   reviews_avg_rating?: number | null
   reviews_count?: number
-  is_enrolled?: boolean
+  modules?: Module[]
 }
 
 export interface PaginatedResponse<T> {
