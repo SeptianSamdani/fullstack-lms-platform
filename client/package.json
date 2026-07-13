@@ -11,7 +11,11 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.3.2",
+    "axios": "^1.18.1",
+    "lucide-vue-next": "^1.0.0",
     "pinia": "^3.0.4",
+    "tailwindcss": "^4.3.2",
     "vue": "beta",
     "vue-router": "^5.1.0"
   },
