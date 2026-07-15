@@ -41,11 +41,16 @@
           </div>
           <h3 class="font-heading font-semibold text-secondary-900 mb-3 line-clamp-2">{{ course.title }}</h3>
 
-          <div v-if="activeTab === 'active'" class="flex items-center gap-2">
-            <BaseButton size="sm" variant="outline" block @click="$router.push(`/dashboard/courses/${course.id}/edit`)">
-              Edit
+          <div v-if="activeTab === 'active'" class="space-y-2">
+            <BaseButton size="sm" variant="outline" block @click="$router.push(`/dashboard/courses/${course.id}/curriculum`)">
+              Kelola Materi
             </BaseButton>
-            <BaseButton size="sm" variant="ghost" :icon="Trash2" @click="confirmDelete(course)" />
+            <div class="flex items-center gap-2">
+              <BaseButton size="sm" variant="outline" block @click="$router.push(`/dashboard/courses/${course.id}/edit`)">
+                Edit
+              </BaseButton>
+              <BaseButton size="sm" variant="ghost" :icon="Trash2" @click="confirmDelete(course)" />
+            </div>
           </div>
           <BaseButton v-else size="sm" variant="outline" block :icon="RotateCcw" @click="handleRestore(course.id)">
             Pulihkan

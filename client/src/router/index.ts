@@ -10,6 +10,9 @@ import ComingSoon from '@/views/dashboard/ComingSoon.vue'
 import CourseManagement from '@/views/dashboard/instructor/CourseManagement.vue'
 import CourseCreate from '@/views/dashboard/instructor/CourseCreate.vue'
 import CourseEdit from '@/views/dashboard/instructor/CourseEdit.vue'
+import CourseCurriculum from '@/views/dashboard/instructor/CourseCurriculum.vue'
+import LessonCreate from '@/views/dashboard/instructor/LessonCreate.vue'
+import LessonEdit from '@/views/dashboard/instructor/LessonEdit.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -37,6 +40,9 @@ const routes: RouteRecordRaw[] = [
       { path: 'subscription-plans', name: 'dashboard-subscription-plans', component: ComingSoon, meta: { title: 'Paket Langganan' } },
       { path: 'enrollments', name: 'dashboard-enrollments', component: ComingSoon, meta: { title: 'Kursus Diikuti' } },
       { path: 'profile', name: 'dashboard-profile', component: ComingSoon, meta: { title: 'Profil' } },
+      { path: 'courses/:id/curriculum', name: 'dashboard-course-curriculum', component: CourseCurriculum, meta: { title: 'Kurikulum' } },
+      { path: 'courses/:id/modules/:moduleId/lessons/create', name: 'dashboard-lesson-create', component: LessonCreate, meta: { title: 'Tambah Lesson' } },
+      { path: 'courses/:id/modules/:moduleId/lessons/:lessonId/edit', name: 'dashboard-lesson-edit', component: LessonEdit, meta: { title: 'Edit Lesson' } },
     ],
   },
 ]
