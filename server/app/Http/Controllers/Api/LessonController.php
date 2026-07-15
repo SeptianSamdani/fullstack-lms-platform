@@ -58,10 +58,13 @@ class LessonController extends Controller
     {
         $lesson->loadMissing('module.course');
         $course = $lesson->module->course;
-        // Kursus gratis: bisa diakses siapa saja
-        // Kursus berbayar: harus enrolled
-        if ($course->type === 'paid') {
-            $user = $request->user();
+        $user = $request->user();
+
+        $isOwner = $user && $user->id === $course->instructor_id;
+
+        // Kursus gratis atau pemilik kursus: bisa akses langsung
+        // Kursus berbayar (bukan pemilik): harus enrolled
+        if ($course->type === 'paid' && !$isOwner) {
             abort_unless(
                 $user && Enrollment::where('user_id', $user->id)
                     ->where('course_id', $course->id)->exists(),
