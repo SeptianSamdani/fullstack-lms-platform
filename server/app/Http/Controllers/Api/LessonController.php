@@ -17,10 +17,29 @@ class LessonController extends Controller
 
     /**
      * Display a listing of the resource.
+     * Konten (content_url & content) hanya ditampilkan untuk yang berhak akses
+     * (owner/instructor/admin atau student yang sudah enroll di course berbayar).
+     * Selain itu, hanya metadata lesson (title, duration, order, dst) yang terlihat.
      */
-    public function index(Module $module)
+    public function index(Request $request, Module $module)
     {
-        return response()->json($module->lessons()->orderBy('order')->get());
+        $module->loadMissing('course');
+        $course = $module->course;
+        $user = $request->user();
+
+        $isOwner = $user && ($user->id === $course->instructor_id || $user->hasRole('admin'));
+        $canViewContent = $isOwner || $course->type !== 'paid' || ($user && Enrollment::where('user_id', $user->id)
+            ->where('course_id', $course->id)->exists());
+
+        $lessons = $module->lessons()->orderBy('order')->get();
+
+        if (!$canViewContent) {
+            $lessons = $lessons->map(function ($lesson) {
+                return collect($lesson)->except(['content_url', 'content'])->all();
+            });
+        }
+
+        return response()->json($lessons);
     }
 
     /**
