@@ -7,6 +7,10 @@ use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\SubscriptionPlan;
 use Illuminate\Http\Request;
+use Xendit\Configuration;
+use Xendit\Invoice\InvoiceApi;
+use Xendit\Invoice\CreateInvoiceRequest;
+use Xendit\XenditSdkException;
 
 class SubscriptionController extends Controller
 {
@@ -54,12 +58,11 @@ class SubscriptionController extends Controller
             return response()->json(['message' => 'Anda sudah memiliki subscription aktif.'], 409);
         }
 
-        // Buat subscription dengan status pending — aktif setelah payment dikonfirmasi
         $subscription = Subscription::create([
             'user_id'    => $user->id,
             'plan_id'    => $plan->id,
-            'start_date' => null,   // Belum aktif
-            'end_date'   => null,   // Belum dihitung
+            'start_date' => null,
+            'end_date'   => null,
             'status'     => 'pending',
         ]);
 
@@ -72,27 +75,62 @@ class SubscriptionController extends Controller
             'payment_method' => null,
         ]);
 
+        Configuration::setXenditKey(config('services.xendit.secret_key'));
+        $invoiceApi = new InvoiceApi();
+
+        try {
+            $invoiceRequest = new CreateInvoiceRequest([
+                'external_id'          => 'payment-' . $payment->id,
+                'description'          => "Pembayaran subscription: {$plan->name}",
+                'amount'                => (float) $plan->price,
+                'currency'              => 'IDR',
+                'payer_email'           => $user->email,
+                'invoice_duration'      => 86400, // 24 jam
+                'success_redirect_url'  => env('FRONTEND_URL') . '/subscriptions/success',
+                'failure_redirect_url'  => env('FRONTEND_URL') . '/subscriptions/failed',
+            ]);
+
+            $invoice = $invoiceApi->createInvoice($invoiceRequest);
+        } catch (XenditSdkException $e) {
+            $payment->update(['status' => 'failed']);
+            $subscription->update(['status' => 'cancelled']);
+
+            return response()->json([
+                'message' => 'Gagal membuat invoice pembayaran.',
+                'error'   => $e->getMessage(),
+            ], 502);
+        }
+
+        $payment->update(['xendit_invoice_id' => $invoice->getId()]);
+
         return response()->json([
             'subscription' => $subscription,
-            'payment'      => $payment,
-            'message'      => 'Silakan selesaikan pembayaran untuk mengaktifkan subscription.',
+            'payment'      => $payment->fresh(),
+            'invoice_url'  => $invoice->getInvoiceUrl(),
+            'message'      => 'Silakan selesaikan pembayaran melalui link berikut.',
         ], 201);
     }
 
     /**
-     * Simulasi konfirmasi payment (untuk testing).
-     * Di production, ini digantikan oleh webhook dari payment gateway.
+     * Konfirmasi payment secara manual oleh ADMIN (interim, sebelum gateway asli aktif).
+     * Route ini sudah dibatasi middleware 'role:admin' — user biasa tidak bisa
+     * mengonfirmasi pembayarannya sendiri.
+     *
+     * TODO: ganti dengan webhook dari payment gateway (Midtrans/Xendit) +
+     * verifikasi signature, lalu hapus endpoint manual confirm ini.
      */
     public function confirmPayment(Request $request, Payment $payment)
     {
-        abort_unless(auth()->user()->id === $payment->user_id, 403);
-
         if ($payment->status !== 'pending') {
             return response()->json(['message' => 'Payment sudah diproses sebelumnya.'], 422);
         }
 
-        // Update payment menjadi success
-        $payment->update(['status' => 'success', 'payment_method' => 'manual_confirm']);
+        // Update payment menjadi success + catat admin yang mengonfirmasi (audit trail)
+        $payment->update([
+            'status'         => 'success',
+            'payment_method' => 'manual_confirm',
+            'confirmed_by'   => $request->user()->id,
+        ]);
 
         // Aktifkan subscription terkait
         if ($payment->payable_type === Subscription::class) {
@@ -106,7 +144,7 @@ class SubscriptionController extends Controller
 
         return response()->json([
             'message'      => 'Payment berhasil dikonfirmasi, subscription sekarang aktif.',
-            'payment'      => $payment->fresh(),
+            'payment'      => $payment->fresh()->load('confirmedBy:id,name'),
             'subscription' => $payment->payable()->first(),
         ]);
     }
