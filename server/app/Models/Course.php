@@ -39,4 +39,27 @@ class Course extends Model
     {
         return $this->hasMany(Review::class);
     }
+
+    /**
+     * Cek apakah $user berhak melihat konten lesson (content_url & content) course ini:
+     * - Owner (instructor pemilik course) atau admin → selalu boleh
+     * - Course type 'free' → siapa saja boleh, termasuk guest (user null)
+     * - Course type 'paid' → hanya user yang sudah enroll di course ini
+     */
+    public function isContentAccessibleBy(?User $user): bool
+    {
+        if ($this->type !== 'paid') {
+            return true;
+        }
+
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->id === $this->instructor_id || $user->hasRole('admin')) {
+            return true;
+        }
+
+        return $this->enrollments()->where('user_id', $user->id)->exists();
+    }
 }
