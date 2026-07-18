@@ -24,12 +24,7 @@ class LessonController extends Controller
     public function index(Request $request, Module $module)
     {
         $module->loadMissing('course');
-        $course = $module->course;
-        $user = $request->user();
-
-        $isOwner = $user && ($user->id === $course->instructor_id || $user->hasRole('admin'));
-        $canViewContent = $isOwner || $course->type !== 'paid' || ($user && Enrollment::where('user_id', $user->id)
-            ->where('course_id', $course->id)->exists());
+        $canViewContent = $module->course->isContentAccessibleBy($request->user());
 
         $lessons = $module->lessons()->orderBy('order')->get();
 
@@ -77,19 +72,12 @@ class LessonController extends Controller
     {
         $lesson->loadMissing('module.course');
         $course = $lesson->module->course;
-        $user = $request->user();
 
-        $isOwner = $user && $user->id === $course->instructor_id;
+        abort_unless(
+            $course->isContentAccessibleBy($request->user()),
+            403, 'Anda harus enroll terlebih dahulu.'
+        );
 
-        // Kursus gratis atau pemilik kursus: bisa akses langsung
-        // Kursus berbayar (bukan pemilik): harus enrolled
-        if ($course->type === 'paid' && !$isOwner) {
-            abort_unless(
-                $user && Enrollment::where('user_id', $user->id)
-                    ->where('course_id', $course->id)->exists(),
-                403, 'Anda harus enroll terlebih dahulu.'
-            );
-        }
         return response()->json($lesson->load('module'));
     }
 

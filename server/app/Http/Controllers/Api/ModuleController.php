@@ -14,9 +14,21 @@ class ModuleController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Course $course)
+    public function index(Request $request, Course $course)
     {
-        return response()->json($course->modules()->with('lessons')->orderBy('order')->get());
+        $canViewContent = $course->isContentAccessibleBy($request->user());
+
+        $modules = $course->modules()->with('lessons')->orderBy('order')->get();
+
+        if (!$canViewContent) {
+            $modules->each(function ($module) {
+                $module->setRelation('lessons', $module->lessons->map(function ($lesson) {
+                    return collect($lesson)->except(['content_url', 'content'])->all();
+                }));
+            });
+        }
+
+        return response()->json($modules);
     }
 
     /**
@@ -37,10 +49,19 @@ class ModuleController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Module $module)
+    public function show(Request $request, Module $module)
     {
-        return response()->json($module->load('lessons'));
+        $module->loadMissing('lessons');
+        $course = Course::findOrFail($module->course_id);
+        $canViewContent = $course->isContentAccessibleBy($request->user());
 
+        if (!$canViewContent) {
+            $module->setRelation('lessons', $module->lessons->map(function ($lesson) {
+                return collect($lesson)->except(['content_url', 'content'])->all();
+            }));
+        }
+
+        return response()->json($module);
     }
 
     /**

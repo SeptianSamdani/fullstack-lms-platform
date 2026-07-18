@@ -12,6 +12,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\XenditWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
@@ -22,6 +23,7 @@ Route::get('/courses/{course}/modules', [ModuleController::class, 'index']);
 Route::get('/modules/{module}/lessons', [LessonController::class, 'index']);
 Route::get('/subscription-plans', [SubscriptionController::class, 'plans']);
 Route::get('/courses/{course}/reviews', [ReviewController::class, 'index']);
+Route::post('/webhooks/xendit/invoice', [XenditWebhookController::class, 'handleInvoice']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -48,6 +50,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/subscription-plans',                    [SubscriptionController::class, 'storePlan']);
         Route::put('/subscription-plans/{plan}',              [SubscriptionController::class, 'updatePlan']);
         Route::delete('/subscription-plans/{plan}',           [SubscriptionController::class, 'destroyPlan']);
+        Route::post('/payments/{payment}/confirm',            [SubscriptionController::class, 'confirmPayment']);
     });
 
     // ─── Categories & Courses (instructor/admin) ──────────────────────────────
@@ -77,7 +80,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // ─── Subscriptions & Payments ─────────────────────────────────────────────
     Route::post('/subscriptions/checkout',            [SubscriptionController::class, 'checkout']);
     Route::get('/subscriptions/me',                   [SubscriptionController::class, 'me']);
-    Route::post('/payments/{payment}/confirm',        [SubscriptionController::class, 'confirmPayment']);
 
     // ─── Progress ────────────────────────────────────────────────────────────
     Route::post('/lessons/{lesson}/complete',         [ProgressController::class, 'markComplete']);

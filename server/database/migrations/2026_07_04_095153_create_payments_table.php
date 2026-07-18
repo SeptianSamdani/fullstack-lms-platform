@@ -18,6 +18,8 @@ return new class extends Migration
             $table->decimal('amount', 10, 2);
             $table->enum('status', ['pending', 'success', 'failed'])->default('pending');
             $table->string('payment_method')->nullable();
+            $table->foreignId('confirmed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('xendit_invoice_id')->nullable()->index();
             $table->timestamps();
         });
     }

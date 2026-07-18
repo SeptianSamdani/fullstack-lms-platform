@@ -67,13 +67,21 @@ class CourseController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Course $course)
+    public function show(Request $request, Course $course)
     {
-        return response()->json(
-            $course->loadAvg('reviews', 'rating')
-                ->loadCount('reviews')
-                ->load(['instructor', 'category', 'modules.lessons'])
-        );
+        $course->loadAvg('reviews', 'rating')
+            ->loadCount('reviews')
+            ->load(['instructor', 'category', 'modules.lessons']);
+
+        if (!$course->isContentAccessibleBy($request->user())) {
+            $course->modules->each(function ($module) {
+                $module->setRelation('lessons', $module->lessons->map(function ($lesson) {
+                    return collect($lesson)->except(['content_url', 'content'])->all();
+                }));
+            });
+        }
+
+        return response()->json($course);
     }
 
     /**
