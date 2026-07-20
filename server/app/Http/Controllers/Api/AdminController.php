@@ -35,6 +35,23 @@ class AdminController extends Controller
             'role' => 'required|string|exists:roles,name',
         ]);
 
+        // Cegah admin mengubah role akun sendiri (hindari kehilangan akses tidak sengaja)
+        if ($user->id === $request->user()->id) {
+            return response()->json([
+                'message' => 'Tidak bisa mengubah role akun Anda sendiri. Minta admin lain untuk melakukannya.',
+            ], 422);
+        }
+
+        // Cegah admin terakhir di-demote sehingga sistem kehilangan admin sama sekali
+        if ($user->hasRole('admin') && $validated['role'] !== 'admin') {
+            $adminCount = User::role('admin')->count();
+            if ($adminCount <= 1) {
+                return response()->json([
+                    'message' => 'Tidak bisa mengubah role admin terakhir yang tersisa di sistem.',
+                ], 422);
+            }
+        }
+
         // Hapus semua role lama lalu assign role baru
         $user->syncRoles([$validated['role']]);
 
