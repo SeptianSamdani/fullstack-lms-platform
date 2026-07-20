@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\UploadLessonVideoJob;
 use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\Module;
@@ -56,13 +57,21 @@ class LessonController extends Controller
 
         $this->validateVideoSource($request, $validated['content_type']);
 
-        if ($request->hasFile('video')) {
-            $path = $request->file('video')->store('lms/lessons', 'cloudinary');
-            $validated['content_url'] = Storage::disk('cloudinary')->url($path);
-        }
+        $hasVideoUpload = $request->hasFile('video');
         unset($validated['video']);
 
-        return response()->json($module->lessons()->create($validated), 201);
+        if ($hasVideoUpload) {
+            $validated['upload_status'] = 'pending';
+        }
+
+        $lesson = $module->lessons()->create($validated);
+
+        if ($hasVideoUpload) {
+            $tempPath = $request->file('video')->store('tmp/lessons', 'local');
+            UploadLessonVideoJob::dispatch($lesson, $tempPath);
+        }
+
+        return response()->json($lesson, 201);
     }
 
     /**
@@ -99,17 +108,24 @@ class LessonController extends Controller
         ]);
 
         $contentType = $validated['content_type'] ?? $lesson->content_type;
-        if (!$request->hasFile('video')) {
-            $this->validateVideoSource($request, $contentType, $lesson->content_url);
-        }
+        $hasVideoUpload = $request->hasFile('video');
 
-        if ($request->hasFile('video')) {
-            $path = $request->file('video')->store('lms/lessons', 'cloudinary');
-            $validated['content_url'] = Storage::disk('cloudinary')->url($path);
+        if (!$hasVideoUpload) {
+            $this->validateVideoSource($request, $contentType, $lesson->content_url);
         }
         unset($validated['video']);
 
+        if ($hasVideoUpload) {
+            $validated['upload_status'] = 'pending';
+        }
+
         $lesson->update($validated);
+
+        if ($hasVideoUpload) {
+            $tempPath = $request->file('video')->store('tmp/lessons', 'local');
+            UploadLessonVideoJob::dispatch($lesson, $tempPath);
+        }
+
         return response()->json($lesson);
     }
 

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('content_url')->nullable();
             $table->longText('content')->nullable();
             $table->enum('content_type', ['video', 'text', 'mixed'])->default('text'); 
+            $table->enum('upload_status', ['pending', 'ready', 'failed'])->default('ready');
             $table->integer('duration')->nullable();
             $table->integer('order')->default(0);
             $table->timestamps();

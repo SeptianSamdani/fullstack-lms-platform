@@ -10,7 +10,7 @@ class Lesson extends Model
 {
     use SoftDeletes; 
     
-    protected $fillable = ['module_id', 'title', 'content_url', 'content', 'content_type', 'duration', 'order'];
+    protected $fillable = ['module_id', 'title', 'content_url', 'content', 'content_type', 'duration', 'order', 'upload_status'];
 
     public function module(): BelongsTo
     {
