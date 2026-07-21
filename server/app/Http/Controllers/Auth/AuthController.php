@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -16,7 +18,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
-            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
+            'password' => ['required', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
         ]);
 
         $user = User::create([
@@ -67,5 +69,50 @@ class AuthController extends Controller
             'roles' => $request->user()->getRoleNames(),
             'permissions' => $request->user()->getAllPermissions()->pluck('name'),
         ]);
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        Password::sendResetLink($request->only('email'));
+
+        // Pesan sengaja sama persis baik email terdaftar atau tidak,
+        // supaya endpoint ini tidak bisa dipakai untuk cek email terdaftar (user enumeration).
+        return response()->json([
+            'message' => 'Jika email terdaftar, link reset password sudah dikirim.',
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'token'    => 'required',
+            'email'    => 'required|email',
+            'password' => ['required', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
+        ]);
+
+        $status = Password::reset(
+            $validated,
+            function ($user, $password) {
+                $user->forceFill([
+                    'password' => $password, // otomatis di-hash lewat cast 'hashed' di model
+                ])->setRememberToken(Str::random(60));
+
+                $user->save();
+
+                // Cabut semua token API lama demi keamanan — kalau device lain kecolongan,
+                // reset password otomatis logout semua sesi lama.
+                $user->tokens()->delete();
+            }
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            return response()->json([
+                'message' => 'Token reset password tidak valid atau sudah kadaluwarsa.',
+            ], 422);
+        }
+
+        return response()->json(['message' => 'Password berhasil direset. Silakan login dengan password baru.']);
     }
 }

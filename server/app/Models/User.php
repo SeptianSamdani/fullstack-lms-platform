@@ -50,6 +50,11 @@ class User extends Authenticatable
             ->exists();
     }
 
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
+    }
+
     /**
      * Get the attributes that should be cast.
      *
