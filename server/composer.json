@@ -12,6 +12,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
         "mews/purifier": "^3.4",
+        "resend/resend-laravel": "^1.4",
         "spatie/laravel-permission": "^8.2",
         "xendit/xendit-php": "7.0"
     },
