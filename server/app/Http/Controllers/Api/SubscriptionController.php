@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\SubscriptionPlan;
+use App\Notifications\PaymentSuccessNotification;
 use Illuminate\Http\Request;
 use Xendit\Configuration;
 use Xendit\Invoice\InvoiceApi;
@@ -140,6 +141,8 @@ class SubscriptionController extends Controller
                 'start_date' => now(),
                 'end_date'   => now()->addDays($plan->duration_days),
             ]);
+
+            $payment->user->notify(new PaymentSuccessNotification($payment->fresh()->load('payable.plan')));
         }
 
         return response()->json([

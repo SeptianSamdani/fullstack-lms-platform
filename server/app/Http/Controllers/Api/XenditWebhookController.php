@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Subscription;
+use App\Notifications\PaymentSuccessNotification;
 use Illuminate\Http\Request;
 
 class XenditWebhookController extends Controller
@@ -56,6 +57,8 @@ class XenditWebhookController extends Controller
                     'start_date' => now(),
                     'end_date'   => now()->addDays($plan->duration_days),
                 ]);
+
+                $payment->user->notify(new PaymentSuccessNotification($payment->fresh()->load('payable.plan')));
             }
         } elseif ($status === 'EXPIRED') {
             $payment->update(['status' => 'failed']);
