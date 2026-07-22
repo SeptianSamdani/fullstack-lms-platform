@@ -27,6 +27,7 @@ class AuthController extends Controller
         ]);
 
         $user->assignRole('student');
+        $user->notify(new \App\Notifications\WelcomeNotification());
 
         return response()->json([
             'user' => $user,
